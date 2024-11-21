@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- Simple circular frame -->
+  <circle cx="12" cy="12" r="11" fill="#1976D2" stroke="#FFFFFF" stroke-width="0.5"/>
+  
+  <!-- Heartbeat/Network line -->
+  <path d="M4 12 L8 12 L9.5 8 L11 16 L13 10 L14.5 14 L16 12 L20 12" 
+        fill="none" 
+        stroke="#FFFFFF" 
+        stroke-width="2" 
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+</svg>

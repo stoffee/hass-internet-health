@@ -8,5 +8,6 @@
     "codeowners": ["@stoffee"],
     "requirements": ["dnspython", "aiohttp"],
     "iot_class": "local_polling",
-    "version": "1.0.1"
+    "version": "1.0.1",
+    "icon": "icons/icon.svg"
   }
