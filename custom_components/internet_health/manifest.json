@@ -3,7 +3,6 @@
     "name": "Internet Health Monitor",
     "documentation": "https://github.com/stoffee/hass-internet-health",
     "issue_tracker": "https://github.com/stoffee/hass-internet-health/issues",
-    "documentation": "",
     "dependencies": [],
     "codeowners": ["@stoffee"],
     "requirements": ["dnspython", "aiohttp"],
