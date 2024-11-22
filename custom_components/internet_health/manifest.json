@@ -1,7 +1,7 @@
 {
     "domain": "internet_health",
     "name": "Internet Health Monitor",
-    "documentation": "https://github.com/stoffee/hass-internet-health",
+    "documentation": "https://github.com/stoffee/hass-internet-health/blob/main/README.md",
     "issue_tracker": "https://github.com/stoffee/hass-internet-health/issues",
     "dependencies": [],
     "codeowners": ["@stoffee"],
