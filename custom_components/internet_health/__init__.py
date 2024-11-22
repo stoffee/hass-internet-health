@@ -8,6 +8,11 @@ import dns.resolver
 
 _LOGGER = logging.getLogger(__name__)
 
+# Since this integration doesn't require any configuration,
+# we'll use the empty config schema
+CONFIG_SCHEMA = cv.empty_config_schema("internet_health")
+
+
 class InternetHealthChecker:
     def __init__(self, hass):
         self.hass = hass
