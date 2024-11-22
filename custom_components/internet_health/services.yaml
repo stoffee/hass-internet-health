@@ -3,5 +3,3 @@ check:
   description: >
     Performs a comprehensive check of internet connectivity including DNS resolution,
     TCP port connectivity, and HTTP connectivity tests.
-  fields: {}
-  target: {}

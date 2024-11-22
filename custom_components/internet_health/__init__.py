@@ -255,8 +255,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     }
                 )
 
-        # Register the service
-        hass.services.async_register(DOMAIN, 'check', async_check_internet)
+        # Register the service with explicit schema
+        service_schema = vol.Schema({})
+        
+        hass.services.async_register(
+            DOMAIN,
+            'check',
+            async_check_internet,
+            schema=service_schema
+        )
         _LOGGER.info("Enhanced Internet Health Check component setup completed")
         
         return True
