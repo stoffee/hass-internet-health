@@ -1,10 +1,10 @@
-name: HACS Action
+name: Validate with hassfest
 
 on:
   push:
   pull_request:
   schedule:
-    - cron: "0 0 * * *"  # Note: Fixed the cron syntax (there was a typo with **)
+    - cron: "0 0 * * *"
 
 jobs:
   validate:
