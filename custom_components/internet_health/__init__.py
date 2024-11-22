@@ -5,12 +5,16 @@ import socket
 from datetime import datetime
 from typing import List, Dict
 import dns.resolver
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+import voluptuous as vol
+import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
 
-# Since this integration doesn't require any configuration,
-# we'll use the empty config schema
-CONFIG_SCHEMA = cv.empty_config_schema("internet_health")
+DOMAIN = "internet_health"
+
+CONFIG_SCHEMA = vol.Schema({}, extra=vol.ALLOW_EXTRA)
 
 
 class InternetHealthChecker:
@@ -210,12 +214,21 @@ class InternetHealthChecker:
                 'total_checks': 3
             }
 
-async def async_setup(hass, config):
-    """Set up the Internet Health Check component."""
-    _LOGGER.info("Setting up Enhanced Internet Health Check component")
 
+# New setup functions below
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    """Set up the Internet Health component."""
+    hass.data.setdefault(DOMAIN, {})
+    return True
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up Internet Health from a config entry."""
+    _LOGGER.info("Setting up Enhanced Internet Health Check component")
+    
     try:
         checker = InternetHealthChecker(hass)
+        hass.data[DOMAIN][entry.entry_id] = checker
 
         async def async_check_internet(call):
             """Handle the service call."""
@@ -243,11 +256,18 @@ async def async_setup(hass, config):
                 )
 
         # Register the service
-        hass.services.async_register('internet_health', 'check', async_check_internet)
+        hass.services.async_register(DOMAIN, 'check', async_check_internet)
         _LOGGER.info("Enhanced Internet Health Check component setup completed")
-
+        
         return True
 
     except Exception as e:
         _LOGGER.error(f"Failed to set up Internet Health Check component: {str(e)}")
         return False
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
+    if hass.data[DOMAIN].pop(entry.entry_id, None) is not None:
+        return True
+    return False

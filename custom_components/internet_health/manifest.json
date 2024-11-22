@@ -2,6 +2,7 @@
   "domain": "internet_health",
   "name": "Internet Health Monitor",
   "codeowners": ["@stoffee"],
+  "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/stoffee/hass-internet-health/blob/main/README.md",
   "iot_class": "local_polling",
