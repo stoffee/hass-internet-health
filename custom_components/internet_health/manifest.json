@@ -5,6 +5,7 @@
   "dependencies": [],
   "documentation": "https://github.com/stoffee/hass-internet-health/blob/main/README.md",
   "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/stoffee/hass-internet-health/issues",
   "requirements": ["dnspython", "aiohttp"],
   "version": "1.0.1"
 }
