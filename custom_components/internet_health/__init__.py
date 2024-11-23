@@ -189,7 +189,7 @@ class InternetHealthChecker:
 
             await self.update_check_history(passed_checks)
 
-            status = tcp_result['success'] and http_result['success'] and confidence >= 60
+            status = tcp_result['success'] and http_result['success'] and confidence >= 33
 
             return {
                 'status': status,
