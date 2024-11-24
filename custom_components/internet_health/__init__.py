@@ -315,6 +315,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    if hass.data[DOMAIN].pop(entry.entry_id, None) is not None:
-        return True
-    return False
+    # Remove the service
+    hass.services.async_remove(DOMAIN, 'check')
+    
+    # Clean up the checker instance
+    if checker := hass.data[DOMAIN].pop(entry.entry_id, None):
+        _LOGGER.info("Cleaned up Internet Health Check component")
+    
+    return True
+
+
+async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Reload config entry."""
+    await async_unload_entry(hass, entry)
+    await async_setup_entry(hass, entry)
