@@ -3,35 +3,22 @@ import logging
 import asyncio
 import aiohttp
 import socket
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Dict
-import dns.resolver
+import dns.asyncresolver  # Changed to asyncresolver
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 from homeassistant.const import CONF_NAME
 from homeassistant.exceptions import HomeAssistantError
-import homeassistant.helpers.event as event
 
 _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "internet_health"
 
-# Constants for configuration
-DEFAULT_NAME = "Internet Health Monitor"
-CONF_CHECK_INTERVAL = "check_interval"
-DEFAULT_CHECK_INTERVAL = 300  # 5 minutes
-
-# Schema for YAML configuration
-CONFIG_SCHEMA = vol.Schema({
-    DOMAIN: vol.Schema({
-        vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
-        vol.Optional(CONF_CHECK_INTERVAL, default=DEFAULT_CHECK_INTERVAL): vol.All(
-            cv.positive_int, vol.Range(min=60)
-        ),
-    })
-}, extra=vol.ALLOW_EXTRA)
+# Configuration schema
+CONFIG_SCHEMA = vol.Schema({}, extra=vol.ALLOW_EXTRA)
 
 
 class InternetHealthChecker:
@@ -66,13 +53,20 @@ class InternetHealthChecker:
         for server, name in nameservers:
             try:
                 _LOGGER.warning(f"Testing DNS using {name}...")
-                resolver = dns.resolver.Resolver()
+                # Create async resolver
+                resolver = dns.asyncresolver.Resolver()
                 resolver.nameservers = [server]
-                loop = asyncio.get_event_loop()
-                await loop.run_in_executor(None, lambda: resolver.resolve('google.com', 'A'))
-                results[name.lower()] = True
-                success += 1
-                _LOGGER.warning(f"✓ DNS using {name} successful!")
+                resolver.lifetime = 5  # Set timeout
+                
+                # Use async resolve method
+                try:
+                    await resolver.resolve('google.com', 'A')
+                    results[name.lower()] = True
+                    success += 1
+                    _LOGGER.warning(f"✓ DNS using {name} successful!")
+                except Exception as dns_error:
+                    raise dns_error
+                    
             except Exception as e:
                 self.failed_checks.append(f"DNS ({name}) check failed: {str(e)}")
                 results[name.lower()] = False
@@ -95,7 +89,11 @@ class InternetHealthChecker:
             for port in self.tcp_ports:
                 try:
                     _LOGGER.warning(f"Testing TCP {port} to {name}...")
-                    reader, writer = await asyncio.open_connection(host, port)
+                    # Add timeout to connection attempt
+                    reader, writer = await asyncio.wait_for(
+                        asyncio.open_connection(host, port),
+                        timeout=5
+                    )
                     writer.close()
                     await writer.wait_closed()
                     host_results[f'port_{port}'] = True
@@ -192,10 +190,14 @@ class InternetHealthChecker:
         self.last_check_time = datetime.now()
 
         try:
-            tcp_result, http_result, dns_result = await asyncio.gather(
-                self.check_tcp_ports(),
-                self.check_http_connectivity(),
-                self.check_dns_multi()
+            # Add timeout to the gather operation
+            tcp_result, http_result, dns_result = await asyncio.wait_for(
+                asyncio.gather(
+                    self.check_tcp_ports(),
+                    self.check_http_connectivity(),
+                    self.check_dns_multi()
+                ),
+                timeout=30  # Overall timeout for all checks
             )
 
             results = {
@@ -221,6 +223,18 @@ class InternetHealthChecker:
                 'total_checks': len(results)
             }
 
+        except asyncio.TimeoutError:
+            _LOGGER.error("Health check timed out after 30 seconds")
+            await self.update_check_history(0)
+            return {
+                'status': False,
+                'timestamp': self.last_check_time,
+                'confidence': 0,
+                'checks': {},
+                'failed_reasons': ["System error: Health check timed out"],
+                'passed_checks': 0,
+                'total_checks': 3
+            }
         except Exception as e:
             _LOGGER.error(f"Auwe! Big crash in health check: {str(e)}")
             await self.update_check_history(0)
