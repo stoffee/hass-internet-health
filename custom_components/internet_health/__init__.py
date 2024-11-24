@@ -21,6 +21,20 @@ DOMAIN = "internet_health"
 CONFIG_SCHEMA = vol.Schema({}, extra=vol.ALLOW_EXTRA)
 
 
+async def async_dns_query(nameserver: str, query: str = 'google.com') -> bool:
+    """Perform DNS query in executor to avoid blocking."""
+    try:
+        resolver = dns.resolver.Resolver()
+        resolver.nameservers = [nameserver]
+        resolver.lifetime = 5
+
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, resolver.resolve, query, 'A')
+        return True
+    except Exception as e:
+        _LOGGER.debug(f"DNS query failed: {str(e)}")
+        return False
+
 class InternetHealthChecker:
     """Class to handle internet health checking."""
 
@@ -53,20 +67,12 @@ class InternetHealthChecker:
         for server, name in nameservers:
             try:
                 _LOGGER.warning(f"Testing DNS using {name}...")
-                # Create async resolver
-                resolver = dns.asyncresolver.Resolver()
-                resolver.nameservers = [server]
-                resolver.lifetime = 5  # Set timeout
-                
-                # Use async resolve method
-                try:
-                    await resolver.resolve('google.com', 'A')
+                if await async_dns_query(server):
                     results[name.lower()] = True
                     success += 1
                     _LOGGER.warning(f"✓ DNS using {name} successful!")
-                except Exception as dns_error:
-                    raise dns_error
-                    
+                else:
+                    raise Exception("DNS resolution failed")
             except Exception as e:
                 self.failed_checks.append(f"DNS ({name}) check failed: {str(e)}")
                 results[name.lower()] = False
@@ -77,6 +83,7 @@ class InternetHealthChecker:
             'success_count': success,
             'total_count': len(nameservers)
         }
+
 
     async def check_tcp_ports(self) -> Dict:
         """Test TCP connectivity to major sites."""
