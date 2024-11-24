@@ -1,24 +1,44 @@
+"""Internet Health Monitor for Home Assistant."""
 import logging
 import asyncio
 import aiohttp
 import socket
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Dict
 import dns.resolver
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
+from homeassistant.const import CONF_NAME
+from homeassistant.exceptions import HomeAssistantError
+import homeassistant.helpers.event as event
 
 _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "internet_health"
 
-CONFIG_SCHEMA = vol.Schema({}, extra=vol.ALLOW_EXTRA)
+# Constants for configuration
+DEFAULT_NAME = "Internet Health Monitor"
+CONF_CHECK_INTERVAL = "check_interval"
+DEFAULT_CHECK_INTERVAL = 300  # 5 minutes
+
+# Schema for YAML configuration
+CONFIG_SCHEMA = vol.Schema({
+    DOMAIN: vol.Schema({
+        vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
+        vol.Optional(CONF_CHECK_INTERVAL, default=DEFAULT_CHECK_INTERVAL): vol.All(
+            cv.positive_int, vol.Range(min=60)
+        ),
+    })
+}, extra=vol.ALLOW_EXTRA)
 
 
 class InternetHealthChecker:
-    def __init__(self, hass):
+    """Class to handle internet health checking."""
+
+    def __init__(self, hass: HomeAssistant):
+        """Initialize the health checker."""
         self.hass = hass
         self.last_check_time = None
         self.failed_checks = []
@@ -189,7 +209,7 @@ class InternetHealthChecker:
 
             await self.update_check_history(passed_checks)
 
-            status = tcp_result['success'] and http_result['success'] and confidence >= 3
+            status = tcp_result['success'] and http_result['success'] and confidence >= 60
 
             return {
                 'status': status,
@@ -215,7 +235,6 @@ class InternetHealthChecker:
             }
 
 
-# New setup functions below
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up the Internet Health component."""
     hass.data.setdefault(DOMAIN, {})
